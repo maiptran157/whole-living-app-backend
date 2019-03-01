@@ -7,6 +7,7 @@
         "start": "node server.js",
         "server": "nodemon server.js"
     },
+    "author": "Mia Tran",
     "dependencies": {
         "axios": "^0.18.0",
         "cors": "^2.8.5",
