@@ -3,25 +3,82 @@ module.exports = (app, connection) => {
     app.get("/api/getGooglePlacesData", function (req, res) {
         var key = require('./config/api_key').GOOGLE_PLACES_API_KEY;
         var axios = require('axios');
-        var region = req.query.region;
+        var address = req.query.address;
         var keyPlace = req.query.keyPlace;
-        var url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${keyPlace.split(" ").join("+")}+in+${region.split(" ").join("+")}&key=${key}`;
-
-        const getData = async () => {
+        var location = null;
+        var urlForGeocodingAPI = `https://maps.googleapis.com/maps/api/geocode/json?address=${address}&key=${key}`;
+        var urlForGooglePlacesAPI = null;
+        var searchResult = [];
+        var dataToClean = [];
+        //get latitude and longitude from address and call getDataFromGooglePlaces
+        const getLatLngFromAddress = async () => {
             try {
-                const response = await axios.get(url);
-                // console.log('response:', response);
-                // res.send(JSON.stringify(response.data));
+                const response = await axios.get(urlForGeocodingAPI);
+                if (response.statusText === "OK") {
+                    location = response.data.results[0].geometry.location;
+                    await getDataFromGooglePlaces();
+                } else {
+                    res.send(response);
+                }
             }
             catch (error) {
-                console.error(error);
+                res.send(error);
             }
         }
 
-        getData();
+        //get nearby key places
+        const getDataFromGooglePlaces = async () => {
+            try {
+                urlForGooglePlacesAPI = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${keyPlace.split(" ").join("+")}&location=${location.lat},${location.lng}&radius=10000&key=${key}`;
+                const response = await axios.get(urlForGooglePlacesAPI);
+                if (response.statusText === "OK") {
+                    searchResult = response.data.results;
+                    for (let i = 0; i < searchResult.length; i++) {
+                        dataToClean.push({
+                            "formatted_address": searchResult[i].formatted_address,
+                            "geometry__location__lat": searchResult[i].geometry.location.lat,
+                            "geometry__location__lng": searchResult[i].geometry.location.lng,
+                            "id": searchResult[i].id,
+                            "name": searchResult[i].name
+                        })
+                    }
+                    await res.send(dataToClean);
+                } else {
+                    res.send(response);
+                }
+            }
+            catch (error) {
+                res.send(error);
+            }
+        }
 
-        var respFromDb = {};
+        getLatLngFromAddress();
 
+        // const getDataFromWFMdb = (req, resp) => {
+        //     connection.getConnection(function (error, tempCont) {
+        //         if (!!error) {
+        //             tempCont.release();
+        //             console.log('Error');
+        //         } else {
+        //             console.log('Connected');
+        //             tempCont.query("SELECT * FROM wfm_store_info", function (error, rows, field) {
+        //                 tempCont.release();
+        //                 if (!!error) {
+        //                     console.log('Error in the query');
+        //                 } else {
+        //                     console.log("Successful query\n");
+        //                     resp.json(rows);
+        //                 }
+        //             });
+        //         }
+        //     })
+        // }
+
+        // getDataFromWFMdb();
+
+    });
+
+    app.get('/api/getWFMData', function (req, resp) {
         connection.getConnection(function (error, tempCont) {
             if (!!error) {
                 tempCont.release();
@@ -32,43 +89,15 @@ module.exports = (app, connection) => {
                     tempCont.release();
                     if (!!error) {
                         console.log('Error in the query');
-                        respFromDb = {
-                            success: 'false',
-                            error: error
-                        }
-                        console.log("respFromDb:", respFromDb);
                     } else {
                         console.log("Successful query\n");
-                        // resp.json(rows);
-                        respFromDb = {
-                            success: 'true',
-                            data: JSON.stringify(rows)
-                        };
-                        console.log("respFromDb:", respFromDb);
+                        resp.json(rows);
                     }
                 });
             }
         })
     });
 
-    // app.get('/api/getWFMData', function (req, resp) {
-    //     connection.getConnection(function (error, tempCont) {
-    //         if (!!error) {
-    //             tempCont.release();
-    //             console.log('Error');
-    //         } else {
-    //             console.log('Connected');
-    //             tempCont.query("SELECT * FROM wfm_store_info", function (error, rows, field) {
-    //                 tempCont.release();
-    //                 if (!!error) {
-    //                     console.log('Error in the query');
-    //                 } else {
-    //                     console.log("Successful query\n");
-    //                     resp.json(rows);
-    //                 }
-    //             });
-    //         }
-    //     })
-    // });
+}
 
-};
+
