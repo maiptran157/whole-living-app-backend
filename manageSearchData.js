@@ -10,8 +10,9 @@ module.exports = (app, connection) => {
         var urlForGeocodingAPI = `https://maps.googleapis.com/maps/api/geocode/json?address=${address}&key=${key}`;
         var urlForGooglePlacesAPI = null;
         var searchResult = [];
-        var dataToSend = [];
-
+        var dataToSend = {};
+        dataToSend.mapCenter = null;
+        dataToSend.places = []
         //get nearby key places
         const getDataFromGooglePlaces = async () => {
             try {
@@ -20,7 +21,7 @@ module.exports = (app, connection) => {
                 if (response.statusText === "OK") {
                     searchResult = response.data.results;
                     for (let i = 0; i < searchResult.length; i++) {
-                        dataToSend.push({
+                        dataToSend.places.push({
                             "formatted_address": searchResult[i].formatted_address,
                             "geometry__location__lat": searchResult[i].geometry.location.lat,
                             "geometry__location__lng": searchResult[i].geometry.location.lng,
@@ -51,7 +52,7 @@ module.exports = (app, connection) => {
                         } else {
                             console.log("Successful query\n");
                             for (let i = 0; i < rows.length; i++) {
-                                dataToSend.push({
+                                dataToSend.places.push({
                                     "formatted_address": rows[i].formatted_address,
                                     "geometry__location__lat": rows[i].geometry__location__lat,
                                     "geometry__location__lng": rows[i].geometry__location__lng,
@@ -72,6 +73,7 @@ module.exports = (app, connection) => {
                 const response = await axios.get(urlForGeocodingAPI);
                 if (response.statusText === "OK") {
                     location = response.data.results[0].geometry.location;
+                    dataToSend.mapCenter = location;
                     await getDataFromGooglePlaces();
                     await getDataFromWFMdb();
                 } else {
