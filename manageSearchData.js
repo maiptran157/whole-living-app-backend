@@ -88,26 +88,6 @@ module.exports = (app, connection) => {
         getLatLngFromAddress();
     });
 
-    // app.get('/api/getWFMData', function (req, resp) {
-    //     connection.getConnection(function (error, tempCont) {
-    //         if (!!error) {
-    //             tempCont.release();
-    //             console.log('Error');
-    //         } else {
-    //             console.log('Connected');
-    //             tempCont.query("SELECT * FROM wfm_store_info", function (error, rows, field) {
-    //                 tempCont.release();
-    //                 if (!!error) {
-    //                     console.log('Error in the query');
-    //                 } else {
-    //                     console.log("Successful query\n");
-    //                     resp.json(rows);
-    //                 }
-    //             });
-    //         }
-    //     })
-    // });
-
 }
 
 
